@@ -42,16 +42,39 @@ const CollaborativeSoundscape = () => {
     masterGainRef.current.connect(recorderDestinationRef.current);
   };
   
-  // Connect to WebSocket server
+  // Connect to WebSocket server with optimization
   useEffect(() => {
     if (currentScreen === 'session' && !socket) {
       // Use environment variable for production, fallback to localhost for dev
       const serverUrl = process.env.REACT_APP_WEBSOCKET_URL || 'http://localhost:3002';
-      const newSocket = io(serverUrl);
+      const newSocket = io(serverUrl, {
+        // Performance optimizations
+        transports: ['websocket', 'polling'],
+        upgrade: true,
+        rememberUpgrade: true,
+        timeout: 20000,
+        forceNew: true,
+        // Reconnection settings
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        maxReconnectionAttempts: 5
+      });
       setSocket(newSocket);
       
       newSocket.on('connect', () => {
         console.log('Connected to collaboration server');
+      });
+      
+      newSocket.on('reconnect', () => {
+        console.log('Reconnected to server');
+      });
+      
+      newSocket.on('disconnect', (reason) => {
+        console.log('Disconnected:', reason);
+        if (reason === 'io server disconnect') {
+          newSocket.connect();
+        }
       });
       
       newSocket.on('user-joined', ({ user, users }) => {
@@ -79,7 +102,13 @@ const CollaborativeSoundscape = () => {
     
     // Use environment variable for production, fallback to localhost for dev
     const serverUrl = process.env.REACT_APP_WEBSOCKET_URL || 'http://localhost:3002';
-    const tempSocket = io(serverUrl, { timeout: 5000 });
+    const tempSocket = io(serverUrl, { 
+      timeout: 8000,
+      transports: ['websocket', 'polling'],
+      upgrade: true,
+      rememberUpgrade: true,
+      reconnection: false // Don't reconnect during initial connection
+    });
     
     // Add connection timeout
     let connectionTimeout = setTimeout(() => {
@@ -129,7 +158,13 @@ const CollaborativeSoundscape = () => {
     
     // Use environment variable for production, fallback to localhost for dev
     const serverUrl = process.env.REACT_APP_WEBSOCKET_URL || 'http://localhost:3002';
-    const tempSocket = io(serverUrl, { timeout: 5000 });
+    const tempSocket = io(serverUrl, { 
+      timeout: 8000,
+      transports: ['websocket', 'polling'],
+      upgrade: true,
+      rememberUpgrade: true,
+      reconnection: false // Don't reconnect during initial connection
+    });
     
     // Add connection timeout
     let connectionTimeout = setTimeout(() => {

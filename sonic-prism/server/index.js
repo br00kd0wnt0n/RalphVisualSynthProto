@@ -19,11 +19,29 @@ const io = new Server(httpServer, {
     ],
     methods: ["GET", "POST"],
     credentials: true
-  }
+  },
+  // Performance optimizations
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  upgradeTimeout: 30000,
+  allowEIO3: true,
+  transports: ['websocket', 'polling']
 });
 
-// Session storage (in-memory for POC)
+// Session storage (in-memory for POC) with cleanup
 const sessions = new Map();
+
+// Clean up old sessions every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  sessions.forEach((session, code) => {
+    // Remove sessions older than 2 hours with no users
+    if (session.users.length === 0 && (now - session.created) > 2 * 60 * 60 * 1000) {
+      sessions.delete(code);
+      console.log('Cleaned up old session:', code);
+    }
+  });
+}, 10 * 60 * 1000);
 
 // Generate random session code
 function generateSessionCode() {
@@ -92,13 +110,23 @@ io.on('connection', (socket) => {
     console.log('User joined session:', sessionCode);
   });
 
-  // Relay instrument events
-  socket.on('pad-trigger', ({ sessionCode, padId, velocity }) => {
-    socket.to(sessionCode).emit('pad-trigger', { padId, velocity });
+  // Throttled event relay for performance
+  const eventThrottles = {};
+  
+  socket.on('pad-trigger', ({ sessionCode, padId, velocity, preset }) => {
+    socket.to(sessionCode).emit('pad-trigger', { padId, velocity, preset });
   });
 
+  // Throttle high-frequency synth updates to 30fps
   socket.on('synth-params', ({ sessionCode, params }) => {
-    socket.to(sessionCode).emit('synth-params', params);
+    const throttleKey = `${socket.id}-synth`;
+    if (!eventThrottles[throttleKey]) {
+      eventThrottles[throttleKey] = true;
+      socket.to(sessionCode).emit('synth-params', params);
+      setTimeout(() => {
+        delete eventThrottles[throttleKey];
+      }, 33); // ~30fps
+    }
   });
 
   socket.on('effect-change', ({ sessionCode, effect, value }) => {
