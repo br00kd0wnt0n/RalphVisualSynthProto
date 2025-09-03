@@ -43,11 +43,11 @@ const PadController = ({ audioContext, masterGain, onPadTrigger, socket, session
       oscillatorType: 'square',
       filterType: 'bandpass',
       filterFreq: 2000,
-      envelope: { attack: 0.001, decay: 0.1, sustain: 0.3, release: 0.6 },
-      // Enhanced effects for punchy leads
-      reverb: { wet: 0.6, roomSize: 0.8 },
-      delay: { time: 0.125, feedback: 0.4, wet: 0.3 },
-      portamento: 0.02 // 20ms glide time
+      envelope: { attack: 0.001, decay: 0.1, sustain: 0.3, release: 0.8 },
+      // Much more prominent effects for punchy leads
+      reverb: { wet: 0.8, roomSize: 1.5 },
+      delay: { time: 0.25, feedback: 0.7, wet: 0.6 },
+      portamento: 0.05 // 50ms glide time
     }
   };
   
