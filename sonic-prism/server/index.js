@@ -10,7 +10,13 @@ app.use(express.json());
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:3001", "https://*.up.railway.app", "https://*.railway.app"],
+    origin: [
+      "http://localhost:3000", 
+      "http://localhost:3001", 
+      "https://bd1.up.railway.app",
+      "https://*.up.railway.app", 
+      "https://*.railway.app"
+    ],
     methods: ["GET", "POST"],
     credentials: true
   }
