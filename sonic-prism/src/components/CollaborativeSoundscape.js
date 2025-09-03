@@ -11,9 +11,9 @@ const CollaborativeSoundscape = () => {
   const [userName, setUserName] = useState('');
   const [socket, setSocket] = useState(null);
   
-  // Instrument state
+  // Control surface state
   const [activeInstrument, setActiveInstrument] = useState('pads'); // 'visual', 'pads', 'both'
-  const [viewMode, setViewMode] = useState('split'); // 'split', 'visual', 'pads'
+  const [viewMode, setViewMode] = useState(null); // Will be set based on activeInstrument
   
   // Recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -121,6 +121,7 @@ const CollaborativeSoundscape = () => {
         users: [{ id: 'local', name: userName, instrument: activeInstrument }],
         isOffline: true 
       });
+      setViewMode(activeInstrument === 'both' ? 'split' : activeInstrument === 'visual' ? 'visual' : 'pads');
       setCurrentScreen('session');
       alert('Collaboration server not available. Running in offline mode. Start the server with "npm run server" to enable collaboration.');
     }, 3000);
@@ -143,6 +144,7 @@ const CollaborativeSoundscape = () => {
             setSessionCode(response.sessionCode);
             setSessionInfo(response.session);
             setSocket(tempSocket);
+            setViewMode(activeInstrument === 'both' ? 'split' : activeInstrument === 'visual' ? 'visual' : 'pads');
             setCurrentScreen('session');
           } else {
             alert('Failed to create session: ' + response.error);
@@ -176,6 +178,7 @@ const CollaborativeSoundscape = () => {
         users: [{ id: 'local', name: userName, instrument: activeInstrument }],
         isOffline: true 
       });
+      setViewMode(activeInstrument === 'both' ? 'split' : activeInstrument === 'visual' ? 'visual' : 'pads');
       setCurrentScreen('session');
     }, 3000);
     
@@ -194,6 +197,7 @@ const CollaborativeSoundscape = () => {
           if (response.success) {
             setSessionInfo(response.session);
             setSocket(tempSocket);
+            setViewMode(activeInstrument === 'both' ? 'split' : activeInstrument === 'visual' ? 'visual' : 'pads');
             setCurrentScreen('session');
           } else {
             alert(response.error);
@@ -382,7 +386,7 @@ const CollaborativeSoundscape = () => {
           <h2 style={{ marginBottom: '30px' }}>Create New Session</h2>
           
           <p style={{ marginBottom: '30px', opacity: 0.8 }}>
-            Choose your starting instrument (you can switch anytime):
+            Choose control interface (Visual or pads, you can switch at anytime):
           </p>
           
           <div style={styles.instrumentToggle}>
@@ -393,7 +397,7 @@ const CollaborativeSoundscape = () => {
               }}
               onClick={() => setActiveInstrument('visual')}
             >
-              📷 Visual Synth
+              📷 Visual Controller
             </button>
             <button
               style={{
@@ -411,7 +415,7 @@ const CollaborativeSoundscape = () => {
               }}
               onClick={() => setActiveInstrument('both')}
             >
-              🎛️ Both
+              🎛️ Both Controllers
             </button>
           </div>
           
@@ -460,7 +464,7 @@ const CollaborativeSoundscape = () => {
           />
           
           <p style={{ marginTop: '30px', marginBottom: '30px', opacity: 0.8 }}>
-            Choose your starting instrument:
+            Choose control interface (Visual or pads, you can switch at anytime):
           </p>
           
           <div style={styles.instrumentToggle}>
@@ -471,7 +475,7 @@ const CollaborativeSoundscape = () => {
               }}
               onClick={() => setActiveInstrument('visual')}
             >
-              📷 Visual Synth
+              📷 Visual Controller
             </button>
             <button
               style={{
@@ -489,7 +493,7 @@ const CollaborativeSoundscape = () => {
               }}
               onClick={() => setActiveInstrument('both')}
             >
-              🎛️ Both
+              🎛️ Both Controllers
             </button>
           </div>
           
@@ -517,11 +521,29 @@ const CollaborativeSoundscape = () => {
       <div style={styles.container}>
         {/* Header with session info and controls */}
         <div style={styles.header}>
-          <div>
-            <h3 style={{ margin: 0 }}>Session: {sessionCode}</h3>
-            <p style={{ margin: '5px 0', opacity: 0.8, fontSize: '14px' }}>
-              {sessionInfo?.isOffline ? 'Offline Mode' : `${sessionInfo?.users?.length || 1} user(s) connected`}
-            </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <button 
+              style={{
+                ...styles.button,
+                padding: '8px 16px',
+                margin: 0
+              }}
+              onClick={() => {
+                if (socket) socket.close();
+                setSocket(null);
+                setCurrentScreen('welcome');
+                setSessionCode('');
+                setSessionInfo(null);
+              }}
+            >
+              ← Back
+            </button>
+            <div>
+              <h3 style={{ margin: 0 }}>Session: {sessionCode}</h3>
+              <p style={{ margin: '5px 0', opacity: 0.8, fontSize: '14px' }}>
+                {sessionInfo?.isOffline ? 'Offline Mode' : `${sessionInfo?.users?.length || 1} user(s) connected`}
+              </p>
+            </div>
           </div>
           
           {/* Instrument switcher - always visible */}
