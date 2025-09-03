@@ -248,12 +248,14 @@ const CollaborativeSoundscape = () => {
       flexDirection: 'column'
     },
     header: {
-      padding: '15px 20px',
+      padding: window.innerWidth > 768 ? '15px 20px' : '10px 15px',
       background: '#ffffff',
       borderBottom: '1px solid #e0e0e0',
       display: 'flex',
       justifyContent: 'space-between',
-      alignItems: 'center'
+      alignItems: 'center',
+      flexWrap: window.innerWidth > 768 ? 'nowrap' : 'wrap',
+      gap: '10px'
     },
     welcomeBox: {
       maxWidth: '600px',
@@ -323,9 +325,10 @@ const CollaborativeSoundscape = () => {
             style={{
               ...styles.button,
               position: 'absolute',
-              top: '20px',
-              left: '20px',
-              padding: '8px 16px'
+              top: window.innerWidth > 768 ? '20px' : '15px',
+              left: window.innerWidth > 768 ? '20px' : '15px',
+              padding: window.innerWidth > 768 ? '8px 16px' : '6px 12px',
+              fontSize: window.innerWidth > 768 ? '12px' : '11px'
             }}
             onClick={() => window.location.reload()}
           >
@@ -375,9 +378,11 @@ const CollaborativeSoundscape = () => {
             style={{
               ...styles.button,
               position: 'absolute',
-              top: '20px',
-              left: '20px',
-              padding: '8px 16px'
+              top: window.innerWidth > 768 ? '20px' : '15px',
+              left: window.innerWidth > 768 ? '20px' : '15px',
+              padding: window.innerWidth > 768 ? '8px 16px' : '6px 12px',
+              fontSize: window.innerWidth > 768 ? '12px' : '11px',
+              zIndex: 10
             }}
             onClick={() => setCurrentScreen('welcome')}
           >
@@ -445,9 +450,11 @@ const CollaborativeSoundscape = () => {
             style={{
               ...styles.button,
               position: 'absolute',
-              top: '20px',
-              left: '20px',
-              padding: '8px 16px'
+              top: window.innerWidth > 768 ? '20px' : '15px',
+              left: window.innerWidth > 768 ? '20px' : '15px',
+              padding: window.innerWidth > 768 ? '8px 16px' : '6px 12px',
+              fontSize: window.innerWidth > 768 ? '12px' : '11px',
+              zIndex: 10
             }}
             onClick={() => setCurrentScreen('welcome')}
           >
@@ -521,12 +528,19 @@ const CollaborativeSoundscape = () => {
       <div style={styles.container}>
         {/* Header with session info and controls */}
         <div style={styles.header}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: window.innerWidth > 768 ? '20px' : '10px',
+            flexShrink: 0 
+          }}>
             <button 
               style={{
                 ...styles.button,
-                padding: '8px 16px',
-                margin: 0
+                padding: window.innerWidth > 768 ? '8px 16px' : '6px 12px',
+                margin: 0,
+                fontSize: window.innerWidth > 768 ? '12px' : '11px',
+                minWidth: 'auto'
               }}
               onClick={() => {
                 if (socket) socket.close();
@@ -539,58 +553,86 @@ const CollaborativeSoundscape = () => {
               ← Back
             </button>
             <div>
-              <h3 style={{ margin: 0 }}>Session: {sessionCode}</h3>
-              <p style={{ margin: '5px 0', opacity: 0.8, fontSize: '14px' }}>
+              <h3 style={{ 
+                margin: 0, 
+                fontSize: window.innerWidth > 768 ? '16px' : '14px' 
+              }}>
+                Session: {sessionCode}
+              </h3>
+              <p style={{ 
+                margin: '5px 0', 
+                opacity: 0.8, 
+                fontSize: window.innerWidth > 768 ? '14px' : '12px' 
+              }}>
                 {sessionInfo?.isOffline ? 'Offline Mode' : `${sessionInfo?.users?.length || 1} user(s) connected`}
               </p>
             </div>
           </div>
           
-          {/* Instrument switcher - always visible */}
-          <div style={{ display: 'flex', gap: '10px' }}>
+          {/* Control switcher - responsive */}
+          <div style={{ 
+            display: 'flex', 
+            gap: window.innerWidth > 768 ? '10px' : '5px',
+            order: window.innerWidth > 768 ? 'unset' : 3,
+            width: window.innerWidth > 768 ? 'auto' : '100%',
+            marginTop: window.innerWidth > 768 ? '0' : '10px'
+          }}>
             <button
               style={{
                 ...styles.button,
-                padding: '8px 16px',
+                padding: window.innerWidth > 768 ? '8px 16px' : '6px 8px',
                 margin: 0,
-                ...(viewMode === 'visual' ? { background: 'rgba(255, 255, 255, 0.4)' } : {})
+                fontSize: window.innerWidth > 768 ? '12px' : '10px',
+                flex: window.innerWidth > 768 ? 'none' : 1,
+                ...(viewMode === 'visual' ? { background: '#f0f0f0', borderColor: '#ccc' } : {})
               }}
               onClick={() => setViewMode('visual')}
             >
-              Visual Only
+              {window.innerWidth > 768 ? 'Visual Only' : 'Visual'}
             </button>
             <button
               style={{
                 ...styles.button,
-                padding: '8px 16px',
+                padding: window.innerWidth > 768 ? '8px 16px' : '6px 8px',
                 margin: 0,
-                ...(viewMode === 'pads' ? { background: 'rgba(255, 255, 255, 0.4)' } : {})
+                fontSize: window.innerWidth > 768 ? '12px' : '10px',
+                flex: window.innerWidth > 768 ? 'none' : 1,
+                ...(viewMode === 'pads' ? { background: '#f0f0f0', borderColor: '#ccc' } : {})
               }}
               onClick={() => setViewMode('pads')}
             >
-              Pads Only
+              {window.innerWidth > 768 ? 'Pads Only' : 'Pads'}
             </button>
             <button
               style={{
                 ...styles.button,
-                padding: '8px 16px',
+                padding: window.innerWidth > 768 ? '8px 16px' : '6px 8px',
                 margin: 0,
-                ...(viewMode === 'split' ? { background: 'rgba(255, 255, 255, 0.4)' } : {})
+                fontSize: window.innerWidth > 768 ? '12px' : '10px',
+                flex: window.innerWidth > 768 ? 'none' : 1,
+                ...(viewMode === 'split' ? { background: '#f0f0f0', borderColor: '#ccc' } : {})
               }}
               onClick={() => setViewMode('split')}
             >
-              Split View
+              {window.innerWidth > 768 ? 'Split View' : 'Split'}
             </button>
           </div>
           
           {/* Recording controls */}
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ 
+            display: 'flex', 
+            gap: window.innerWidth > 768 ? '10px' : '5px',
+            order: window.innerWidth > 768 ? 'unset' : 4,
+            marginTop: window.innerWidth > 768 ? '0' : '10px'
+          }}>
             <button
               style={{
                 ...styles.button,
-                padding: '8px 16px',
+                padding: window.innerWidth > 768 ? '8px 16px' : '6px 12px',
                 margin: 0,
-                background: isRecording ? '#ff4444' : 'rgba(255, 100, 100, 0.3)'
+                fontSize: window.innerWidth > 768 ? '12px' : '11px',
+                background: isRecording ? '#ff4444' : 'rgba(255, 100, 100, 0.3)',
+                minWidth: 'auto'
               }}
               onClick={isRecording ? stopRecording : startRecording}
             >
@@ -602,13 +644,15 @@ const CollaborativeSoundscape = () => {
                 download="soundscape.webm"
                 style={{
                   ...styles.button,
-                  padding: '8px 16px',
+                  padding: window.innerWidth > 768 ? '8px 16px' : '6px 12px',
                   margin: 0,
+                  fontSize: window.innerWidth > 768 ? '12px' : '11px',
                   textDecoration: 'none',
-                  display: 'inline-block'
+                  display: 'inline-block',
+                  minWidth: 'auto'
                 }}
               >
-                💾 Download
+                💾 {window.innerWidth > 768 ? 'Download' : 'Save'}
               </a>
             )}
           </div>
