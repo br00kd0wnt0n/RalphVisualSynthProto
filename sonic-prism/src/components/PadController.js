@@ -5,6 +5,7 @@ const PadController = ({ audioContext, masterGain, onPadTrigger, socket, session
   const [activePads, setActivePads] = useState(new Set());
   const [selectedPreset, setSelectedPreset] = useState('warm_pads');
   const oscillatorsRef = useRef({});
+  const lastFrequencyRef = useRef(null); // For portamento
   
   // Pad sound presets with different octaves and styles
   const padPresets = {
@@ -42,7 +43,11 @@ const PadController = ({ audioContext, masterGain, onPadTrigger, socket, session
       oscillatorType: 'square',
       filterType: 'bandpass',
       filterFreq: 2000,
-      envelope: { attack: 0.001, decay: 0.1, sustain: 0.3, release: 0.4 }
+      envelope: { attack: 0.001, decay: 0.1, sustain: 0.3, release: 0.6 },
+      // Enhanced effects for punchy leads
+      reverb: { wet: 0.6, roomSize: 0.8 },
+      delay: { time: 0.125, feedback: 0.4, wet: 0.3 },
+      portamento: 0.02 // 20ms glide time
     }
   };
   
@@ -100,18 +105,31 @@ const PadController = ({ audioContext, masterGain, onPadTrigger, socket, session
     const preset = padPresets[selectedPreset];
     const now = audioContext.currentTime;
     
-    // Create audio chain with reverb and slow filtering
+    // Create audio chain with reverb, delay, and slow filtering
     const osc = audioContext.createOscillator();
     const envelope = audioContext.createGain();
     const filter = audioContext.createBiquadFilter();
     const slowFilter = audioContext.createBiquadFilter();
     const convolver = audioContext.createConvolver();
     const reverbGain = audioContext.createGain();
+    const delayNode = audioContext.createDelay(0.5);
+    const delayFeedback = audioContext.createGain();
+    const delayWet = audioContext.createGain();
     const dryGain = audioContext.createGain();
     
-    // Configure oscillator based on preset
+    // Configure oscillator based on preset with portamento
     osc.type = preset.oscillatorType;
-    osc.frequency.setValueAtTime(pad.freq, now);
+    
+    // Apply portamento/glide for punchy leads
+    if (preset.portamento && lastFrequencyRef.current) {
+      osc.frequency.setValueAtTime(lastFrequencyRef.current, now);
+      osc.frequency.exponentialRampToValueAtTime(pad.freq, now + preset.portamento);
+    } else {
+      osc.frequency.setValueAtTime(pad.freq, now);
+    }
+    
+    // Store frequency for next portamento
+    lastFrequencyRef.current = pad.freq;
     
     // Configure main filter based on preset
     filter.type = preset.filterType;
@@ -124,20 +142,34 @@ const PadController = ({ audioContext, masterGain, onPadTrigger, socket, session
     slowFilter.frequency.linearRampToValueAtTime(preset.filterFreq * 2, now + 2.0); // 2-second sweep
     slowFilter.Q.setValueAtTime(1.5, now);
     
-    // Create reverb impulse response
-    const impulseLength = audioContext.sampleRate * 2; // 2 seconds
+    // Create reverb impulse response (enhanced for punchy leads)
+    const reverbSize = preset.reverb ? preset.reverb.roomSize || 0.5 : 0.5;
+    const impulseLength = audioContext.sampleRate * (2 + reverbSize); // Variable length
     const impulse = audioContext.createBuffer(2, impulseLength, audioContext.sampleRate);
     for (let channel = 0; channel < 2; channel++) {
       const channelData = impulse.getChannelData(channel);
       for (let i = 0; i < impulseLength; i++) {
-        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / impulseLength, 2);
+        const decay = Math.pow(1 - i / impulseLength, reverbSize + 1);
+        channelData[i] = (Math.random() * 2 - 1) * decay;
       }
     }
     convolver.buffer = impulse;
     
-    // Configure reverb mix
-    reverbGain.gain.setValueAtTime(0.3, now); // 30% reverb
-    dryGain.gain.setValueAtTime(0.7, now);    // 70% dry
+    // Configure delay effects (for punchy leads)
+    if (preset.delay) {
+      delayNode.delayTime.setValueAtTime(preset.delay.time, now);
+      delayFeedback.gain.setValueAtTime(preset.delay.feedback, now);
+      delayWet.gain.setValueAtTime(preset.delay.wet, now);
+    } else {
+      delayNode.delayTime.setValueAtTime(0, now);
+      delayFeedback.gain.setValueAtTime(0, now);
+      delayWet.gain.setValueAtTime(0, now);
+    }
+    
+    // Configure reverb mix (enhanced for punchy leads)
+    const reverbAmount = preset.reverb ? preset.reverb.wet || 0.3 : 0.3;
+    reverbGain.gain.setValueAtTime(reverbAmount, now);
+    dryGain.gain.setValueAtTime(1 - reverbAmount, now);
     
     // Configure envelope based on preset (ADSR)
     const env = preset.envelope;
@@ -146,18 +178,31 @@ const PadController = ({ audioContext, masterGain, onPadTrigger, socket, session
     envelope.gain.exponentialRampToValueAtTime(velocity * env.sustain, now + env.attack + env.decay);
     envelope.gain.exponentialRampToValueAtTime(0.01, now + env.attack + env.decay + env.release);
     
-    // Connect audio chain with parallel dry/wet reverb
+    // Connect audio chain with delay, reverb, and filtering
     osc.connect(filter);
     filter.connect(slowFilter);
     
-    // Split to dry and reverb paths
+    // Split to dry, delay, and reverb paths
     slowFilter.connect(dryGain);
+    
+    // Delay chain (for punchy leads)
+    if (preset.delay) {
+      slowFilter.connect(delayNode);
+      delayNode.connect(delayFeedback);
+      delayFeedback.connect(delayNode); // Feedback loop
+      delayNode.connect(delayWet);
+    }
+    
+    // Reverb path
     slowFilter.connect(convolver);
     convolver.connect(reverbGain);
     
-    // Mix dry and reverb through envelope
+    // Mix all paths through envelope
     dryGain.connect(envelope);
     reverbGain.connect(envelope);
+    if (preset.delay) {
+      delayWet.connect(envelope);
+    }
     envelope.connect(masterGain);
     
     // Start and schedule stop
